@@ -8,7 +8,8 @@
 #include <math.h>
 
 #define N 8
-#define M 0.5
+#define M 0.366
+#define EPSILON 0.0000000001
 
 /*
   Structure pour représenter une matrice:
@@ -23,6 +24,76 @@ typedef struct {
     int     rows, cols;
 } matrix_t;
 
+/* Returns true if mat is diagonally dominant */
+int DiagonallyDominant(matrix_t* mat) {
+    float linetotal;
+    
+    for (int i = 0; i < mat->rows; ++i) {
+        linetotal = 0.0;
+        for (int j = 0; j < mat->cols; ++j) {
+            if (i != j)
+                linetotal += fabsf(mat->elems[i][j]);
+        }
+        if (fabs(mat->elems[i][i]) <= linetotal)
+            return 0;
+    }
+    return 1;
+}
+
+float VectorNorm1(matrix_t* vector) {
+    float norm = 0.0;
+
+    for (int i = 0; i < vector->rows; ++ i)
+        norm += fabsf(vector->elems[i][0]);
+
+    return norm;
+}
+
+float MatrixNorm1(matrix_t* mat) {
+    float norm = 0.0;
+    float max = 0.0;
+
+    for (int j = 0; j < mat->cols; ++j) {
+        norm = 0.0;
+        for (int i = 0; i < mat->rows; ++i)
+            norm += fabsf(mat->elems[i][j]);
+        if (norm > max)
+            max = norm;
+    }
+    return norm;
+}
+
+/* x contains x0 for the iterative evaluation */
+void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
+    matrix_t* x1 = NewMatrix(N, 1);
+    matrix_t* x2 = NewMatrix(N, 1);
+    matrix_t* x3 = NewMatrix(N, 1);
+    matrix_t* temp;
+    float delta;
+
+    if (!DiagonallyDominant(A))
+        return;
+
+    CopyMatrix(x1, x);
+    repeat {
+        for (int i = 0; i < x->rows; ++i) {
+            for (int j = 0; j < A->cols; +j) {
+                x2->elems[i][0] = (A->elems[i][j] / A->elems[i][i]) * x1->elems[i][0]; 
+            }
+            x2->elems[i][0] = (b->elems[i][0] / A->elems[i][i]) -  x2->elems[i][0];
+        }
+        MatrixSub(x2, x1, x3);        
+        delta = VectorNorm1(x3);
+        temp = x1;
+        x1 = x2;
+        x2 = temp;
+    } until (delta <= EPSILON);
+    
+    CopyMatrix(x, x1);
+    FreeMatrix(x3);
+    FreeMatrix(x2);
+    FreeMatrix(x1);
+}
 
 /* Allocation dynamique d'une nouvelle matrice.  Tous les éléments
  * sont initialisés à 0. */
@@ -84,8 +155,8 @@ void FillMatrix(matrix_t* mat, float val) {
 void MakePentadiagonalMatrix(matrix_t* matrix, float m) {
     float m2 = m*m;
 
-    // Do nothing if the matrix isn't square.
-    if (matrix->rows != matrix->cols)
+    // Do nothing if the matrix isn't square or if m not in [0..1].
+    if ((matrix->rows != matrix->cols) || (m < 0.0) || (m > 1.0))
         return;
 
     matrix->elems[0][0] = 1.0;
@@ -113,6 +184,39 @@ void MakePentadiagonalMatrix(matrix_t* matrix, float m) {
     matrix->elems[matrix->rows-1][matrix->cols-1] = 1.0;
 }
 
+int MatrixAddCompatible(matrix_t* A, matrix_t* B, matrix_t* C) {
+    if ((A->rows != B->rows) || (A->rows != C->rows) ||
+        (A->cols != B->cols) || (A->cols != C->cols) ||
+        (B->rows != C->rows) || (B->cols != C->cols))
+        return 0;
+    
+    return 1;
+}
+
+void MatrixSub(matrix_t* A, matrix_t* B, matrix_t* C) {
+    if (!MatrixAddCompatible(A, B, C))
+        return;
+    
+    for (int i = 0; i < C->rows; ++i)
+        for (int j = 0; j < C->cols)
+            C->elems[i][j] = A->elems[i][j] - B->elems[i][j];    
+}
+
+void MatrixAdd(matrix_t* A, matrix_t* B, matrix_t* C) {
+    if (!MatrixAddCompatible(A, B, C))
+        return;
+
+    for (int i = 0; i < C->rows; ++i)
+        for (int j = 0; j < C->cols)
+            C->elems[i][j] = A->elems[i][j] + B->elems[i][j];
+}
+
+void MatrixScalarMult(matrix_t* A, float scal, matrix_t* C) {
+    for (int i = 0; i < C->rows; ++i)
+        for (int j = 0; j < C->cols)
+            C->elems[i][j] = A->elems[i][j] * scal;    
+}
+
 void MatrixMult(matrix_t* A, matrix_t* B, matrix_t* C) {
     if ((A->cols != B->rows) || (C->rows != A->rows) || (C->cols != B->cols))
         return;
@@ -128,7 +232,7 @@ void MatrixMult(matrix_t* A, matrix_t* B, matrix_t* C) {
 
 
 /*
- *
+ * vector n <- A * [1, 1, ..., 1]^T
  */
 void MakeBVector(matrix_t* A, matrix_t* vector) {
     matrix_t* v1 = NewMatrix(N, 1);
@@ -192,7 +296,12 @@ int main(void) {
     MakePentadiagonalMatrix(A, M);
     MakeBVector(A, b);
 
+    printf("A:\n");
     PrintMatrix(A);
+    if (DiagonallyDominant(A))
+        printf("Matrice diagonalement dominante\n\n");
+    else
+        printf("Matrice non diagonalement dominante\n\n");
     PrintMatrix(b);
 
     FreeMatrix(b);

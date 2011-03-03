@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <math.h>
 
-#define N 8
-#define M 0.366
+#define N 10
+#define M 0.36
 #define EPSILON 0.0000000001
 
 /*
@@ -24,76 +24,6 @@ typedef struct {
     int     rows, cols;
 } matrix_t;
 
-/* Returns true if mat is diagonally dominant */
-int DiagonallyDominant(matrix_t* mat) {
-    float linetotal;
-    
-    for (int i = 0; i < mat->rows; ++i) {
-        linetotal = 0.0;
-        for (int j = 0; j < mat->cols; ++j) {
-            if (i != j)
-                linetotal += fabsf(mat->elems[i][j]);
-        }
-        if (fabs(mat->elems[i][i]) <= linetotal)
-            return 0;
-    }
-    return 1;
-}
-
-float VectorNorm1(matrix_t* vector) {
-    float norm = 0.0;
-
-    for (int i = 0; i < vector->rows; ++ i)
-        norm += fabsf(vector->elems[i][0]);
-
-    return norm;
-}
-
-float MatrixNorm1(matrix_t* mat) {
-    float norm = 0.0;
-    float max = 0.0;
-
-    for (int j = 0; j < mat->cols; ++j) {
-        norm = 0.0;
-        for (int i = 0; i < mat->rows; ++i)
-            norm += fabsf(mat->elems[i][j]);
-        if (norm > max)
-            max = norm;
-    }
-    return norm;
-}
-
-/* x contains x0 for the iterative evaluation */
-void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
-    matrix_t* x1 = NewMatrix(N, 1);
-    matrix_t* x2 = NewMatrix(N, 1);
-    matrix_t* x3 = NewMatrix(N, 1);
-    matrix_t* temp;
-    float delta;
-
-    if (!DiagonallyDominant(A))
-        return;
-
-    CopyMatrix(x1, x);
-    repeat {
-        for (int i = 0; i < x->rows; ++i) {
-            for (int j = 0; j < A->cols; +j) {
-                x2->elems[i][0] = (A->elems[i][j] / A->elems[i][i]) * x1->elems[i][0]; 
-            }
-            x2->elems[i][0] = (b->elems[i][0] / A->elems[i][i]) -  x2->elems[i][0];
-        }
-        MatrixSub(x2, x1, x3);        
-        delta = VectorNorm1(x3);
-        temp = x1;
-        x1 = x2;
-        x2 = temp;
-    } until (delta <= EPSILON);
-    
-    CopyMatrix(x, x1);
-    FreeMatrix(x3);
-    FreeMatrix(x2);
-    FreeMatrix(x1);
-}
 
 /* Allocation dynamique d'une nouvelle matrice.  Tous les éléments
  * sont initialisés à 0. */
@@ -134,6 +64,7 @@ void FreeMatrix(matrix_t* mat) {
     free(mat->elems);
     free(mat);
 }
+
 
 void FillMatrix(matrix_t* mat, float val) {
   for (int i = 0; i < mat->rows; ++i)
@@ -184,6 +115,47 @@ void MakePentadiagonalMatrix(matrix_t* matrix, float m) {
     matrix->elems[matrix->rows-1][matrix->cols-1] = 1.0;
 }
 
+
+/* Returns true if mat is diagonally dominant */
+int DiagonallyDominant(matrix_t* mat) {
+    float linetotal;
+    
+    for (int i = 0; i < mat->rows; ++i) {
+        linetotal = 0.0;
+        for (int j = 0; j < mat->cols; ++j) {
+            if (i != j)
+                linetotal += fabsf(mat->elems[i][j]);
+        }
+        if (fabs(mat->elems[i][i]) <= linetotal)
+            return 0;
+    }
+    return 1;
+}
+
+float VectorNorm1(matrix_t* vector) {
+    float norm = 0.0f;
+
+    for (int i = 0; i < vector->rows; ++i)
+        norm += fabs(vector->elems[i][0]);
+
+    return norm;
+}
+
+float MatrixNorm1(matrix_t* mat) {
+    float norm = 0.0f;
+    float max = 0.0f;
+
+    for (int j = 0; j < mat->cols; ++j) {
+        norm = 0.0;
+        for (int i = 0; i < mat->rows; ++i) {
+            norm += fabs(mat->elems[i][j]);
+        }
+        if (norm > max)
+            max = norm;
+    }
+    return max;
+}
+
 int MatrixAddCompatible(matrix_t* A, matrix_t* B, matrix_t* C) {
     if ((A->rows != B->rows) || (A->rows != C->rows) ||
         (A->cols != B->cols) || (A->cols != C->cols) ||
@@ -198,7 +170,7 @@ void MatrixSub(matrix_t* A, matrix_t* B, matrix_t* C) {
         return;
     
     for (int i = 0; i < C->rows; ++i)
-        for (int j = 0; j < C->cols)
+        for (int j = 0; j < C->cols; ++j)
             C->elems[i][j] = A->elems[i][j] - B->elems[i][j];    
 }
 
@@ -207,13 +179,13 @@ void MatrixAdd(matrix_t* A, matrix_t* B, matrix_t* C) {
         return;
 
     for (int i = 0; i < C->rows; ++i)
-        for (int j = 0; j < C->cols)
+        for (int j = 0; j < C->cols; ++j)
             C->elems[i][j] = A->elems[i][j] + B->elems[i][j];
 }
 
 void MatrixScalarMult(matrix_t* A, float scal, matrix_t* C) {
     for (int i = 0; i < C->rows; ++i)
-        for (int j = 0; j < C->cols)
+        for (int j = 0; j < C->cols; ++j)
             C->elems[i][j] = A->elems[i][j] * scal;    
 }
 
@@ -288,8 +260,78 @@ int MatrixEq(matrix_t* A, matrix_t* B) {
 }
 
 
+/* x contains x0 for the iterative evaluation */
+void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
+    matrix_t* x1 = NewMatrix(N, 1);
+    matrix_t* x2 = NewMatrix(N, 1);
+    matrix_t* x3 = NewMatrix(N, 1);
+    matrix_t* temp;
+    int iter = 0;
+
+    CopyMatrix(x1, x);
+    do {
+        FillMatrix(x2, 0.0f);        
+        iter += 1;
+        for (int i = 0; i < x->rows; ++i) {
+            for (int j = 0; j < A->cols; ++j) {
+                if (i != j)
+                    x2->elems[i][0] += (A->elems[i][j] / A->elems[i][i]) * x1->elems[j][0]; 
+            }
+            x2->elems[i][0] = (b->elems[i][0] / A->elems[i][i]) -  x2->elems[i][0];
+        }
+        MatrixSub(x2, x1, x3);
+        temp = x1;
+        x1 = x2;
+        x2 = temp;
+    } while (VectorNorm1(x3) > EPSILON);
+
+    printf("iter: %d\n", iter);
+    CopyMatrix(x, x1);
+    FreeMatrix(x3);
+    FreeMatrix(x2);
+    FreeMatrix(x1);
+}
+
+/* x contains x0 for the iterative evaluation */
+void SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
+    matrix_t* x1 = NewMatrix(N, 1);
+    matrix_t* x2 = NewMatrix(N, 1);
+    matrix_t* x3 = NewMatrix(N, 1);
+    matrix_t* temp;
+    float accumul = 0.0f;
+    int iter = 0;
+
+    CopyMatrix(x1, x);
+    do {
+        FillMatrix(x2, 0.0f);        
+        iter += 1;
+        for (int i = 0; i < x->rows; ++i) {
+            accumul = 0.0f;
+            for (int j = 0; j < i; ++j) {
+                accumul += (A->elems[i][j] / A->elems[i][i]) * x2->elems[j][0]; 
+            }
+            for (int j = (i + 1); j < A->cols; ++j) {
+                accumul += (A->elems[i][j] / A->elems[i][i]) * x1->elems[j][0]; 
+            }
+            x2->elems[i][0] = (b->elems[i][0] / A->elems[i][i]) - accumul;
+        }
+        MatrixSub(x2, x1, x3);
+        temp = x1;
+        x1 = x2;
+        x2 = temp;
+    } while (VectorNorm1(x3) > EPSILON);
+
+    printf("iter: %d\n", iter);    
+    CopyMatrix(x, x1);
+    FreeMatrix(x3);
+    FreeMatrix(x2);
+    FreeMatrix(x1);
+}
+
 int main(void) {
     matrix_t* A = NewMatrix(N, N);
+    matrix_t* B = NewMatrix(N, N);
+    matrix_t* C = NewMatrix(N, N);
     matrix_t* x = NewMatrix(N, 1);
     matrix_t* b = NewMatrix(N, 1);
 
@@ -302,10 +344,23 @@ int main(void) {
         printf("Matrice diagonalement dominante\n\n");
     else
         printf("Matrice non diagonalement dominante\n\n");
+    printf("b:\n");
     PrintMatrix(b);
 
+    FillMatrix(x, 0.0f);    // x contains x0    
+    SolveJacobi(A, b, x);
+    printf("x Jacobi:\n");
+    PrintMatrix(x);    
+
+    FillMatrix(x, 0.0f);    // x contains x0    
+    SolveGaussSeidel(A, b, x);
+    printf("x GaussSeidel:\n");
+    PrintMatrix(x);    
+    
     FreeMatrix(b);
     FreeMatrix(x);
+    FreeMatrix(C);
+    FreeMatrix(B);
     FreeMatrix(A);
 
     return 0;

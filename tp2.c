@@ -7,9 +7,9 @@
 #include <stdio.h>
 #include <math.h>
 
-#define N 10
+#define N 5
 #define M 0.36
-#define EPSILON 0.0000000001
+#define EPSILON 2e-8
 
 /*
   Structure pour représenter une matrice:
@@ -83,48 +83,33 @@ void FillMatrix(matrix_t* mat, float val) {
   .
   0 ...                 0  m^2 m 1
  */
-void MakePentadiagonalMatrix(matrix_t* matrix, float m) {
-    float m2 = m*m;
 
+void MakePentadiagonalMatrix(matrix_t* matrix, float m) {
     // Do nothing if the matrix isn't square or if m not in [0..1].
     if ((matrix->rows != matrix->cols) || (m < 0.0) || (m > 1.0))
         return;
 
-    matrix->elems[0][0] = 1.0;
-    matrix->elems[0][1] = m;
-    matrix->elems[0][2] = m2;
-    matrix->elems[1][0] = m;
-    matrix->elems[1][1] = 1.0;
-    matrix->elems[1][2] = m;
-    matrix->elems[1][3] = m2;
-    if ( matrix->rows > 4) {
-        for (int i = 2; i < matrix->rows - 2; ++i) {
-            matrix->elems[i][i-2] = m2;
-            matrix->elems[i][i-1] = m;
-            matrix->elems[i][i] = 1.0;
-            matrix->elems[i][i+1] = m;
-            matrix->elems[i][i+2] = m2;
+    float m2 = m*m;
+
+    for (int i = 0; i < matrix->rows; ++i) {
+        for (int j = 0; j < matrix->cols; ++j) {
+            if (i == j) matrix->elems[i][j] = 1;
+            else if (fabs(i - j) == 1) matrix->elems[i][j] = m;
+            else if (fabs(i - j) == 2) matrix->elems[i][j] = m2;
         }
     }
-    matrix->elems[matrix->rows-2][matrix->cols-4] = m2;
-    matrix->elems[matrix->rows-2][matrix->cols-3] = m;
-    matrix->elems[matrix->rows-2][matrix->cols-2] = 1.0;
-    matrix->elems[matrix->rows-2][matrix->cols-1] = m;
-    matrix->elems[matrix->rows-1][matrix->cols-3] = m2;
-    matrix->elems[matrix->rows-1][matrix->cols-2] = m;
-    matrix->elems[matrix->rows-1][matrix->cols-1] = 1.0;
 }
+
 
 
 /* Returns true if mat is diagonally dominant */
 int DiagonallyDominant(matrix_t* mat) {
     float linetotal;
-    
+
     for (int i = 0; i < mat->rows; ++i) {
         linetotal = 0.0;
         for (int j = 0; j < mat->cols; ++j) {
-            if (i != j)
-                linetotal += fabsf(mat->elems[i][j]);
+            linetotal += fabsf(mat->elems[i][j]) * (i != j);
         }
         if (fabs(mat->elems[i][i]) <= linetotal)
             return 0;
@@ -156,22 +141,20 @@ float MatrixNorm1(matrix_t* mat) {
     return max;
 }
 
+
 int MatrixAddCompatible(matrix_t* A, matrix_t* B, matrix_t* C) {
-    if ((A->rows != B->rows) || (A->rows != C->rows) ||
-        (A->cols != B->cols) || (A->cols != C->cols) ||
-        (B->rows != C->rows) || (B->cols != C->cols))
-        return 0;
-    
-    return 1;
+    return ((A->rows == B->rows) || (A->rows == C->rows) ||
+            (A->cols == B->cols) || (A->cols == C->cols) ||
+            (B->rows == C->rows) || (B->cols == C->cols));
 }
 
 void MatrixSub(matrix_t* A, matrix_t* B, matrix_t* C) {
     if (!MatrixAddCompatible(A, B, C))
         return;
-    
+
     for (int i = 0; i < C->rows; ++i)
         for (int j = 0; j < C->cols; ++j)
-            C->elems[i][j] = A->elems[i][j] - B->elems[i][j];    
+            C->elems[i][j] = A->elems[i][j] - B->elems[i][j];
 }
 
 void MatrixAdd(matrix_t* A, matrix_t* B, matrix_t* C) {
@@ -186,7 +169,7 @@ void MatrixAdd(matrix_t* A, matrix_t* B, matrix_t* C) {
 void MatrixScalarMult(matrix_t* A, float scal, matrix_t* C) {
     for (int i = 0; i < C->rows; ++i)
         for (int j = 0; j < C->cols; ++j)
-            C->elems[i][j] = A->elems[i][j] * scal;    
+            C->elems[i][j] = A->elems[i][j] * scal;
 }
 
 void MatrixMult(matrix_t* A, matrix_t* B, matrix_t* C) {
@@ -211,7 +194,7 @@ void MakeBVector(matrix_t* A, matrix_t* vector) {
 
     FillMatrix(v1, 1.0);
     MatrixMult(A, v1, vector);
-    
+
     FreeMatrix(v1);
 }
 
@@ -260,6 +243,7 @@ int MatrixEq(matrix_t* A, matrix_t* B) {
 }
 
 
+
 /* x contains x0 for the iterative evaluation */
 void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
     matrix_t* x1 = NewMatrix(N, 1);
@@ -270,12 +254,12 @@ void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
 
     CopyMatrix(x1, x);
     do {
-        FillMatrix(x2, 0.0f);        
+        FillMatrix(x2, 0.0f);
         iter += 1;
         for (int i = 0; i < x->rows; ++i) {
             for (int j = 0; j < A->cols; ++j) {
                 if (i != j)
-                    x2->elems[i][0] += (A->elems[i][j] / A->elems[i][i]) * x1->elems[j][0]; 
+                    x2->elems[i][0] += (A->elems[i][j] / A->elems[i][i]) * x1->elems[j][0];
             }
             x2->elems[i][0] = (b->elems[i][0] / A->elems[i][i]) -  x2->elems[i][0];
         }
@@ -292,6 +276,8 @@ void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
     FreeMatrix(x1);
 }
 
+
+
 /* x contains x0 for the iterative evaluation */
 void SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
     matrix_t* x1 = NewMatrix(N, 1);
@@ -303,15 +289,15 @@ void SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
 
     CopyMatrix(x1, x);
     do {
-        FillMatrix(x2, 0.0f);        
+        FillMatrix(x2, 0.0f);
         iter += 1;
         for (int i = 0; i < x->rows; ++i) {
             accumul = 0.0f;
             for (int j = 0; j < i; ++j) {
-                accumul += (A->elems[i][j] / A->elems[i][i]) * x2->elems[j][0]; 
+                accumul += (A->elems[i][j] / A->elems[i][i]) * x2->elems[j][0];
             }
             for (int j = (i + 1); j < A->cols; ++j) {
-                accumul += (A->elems[i][j] / A->elems[i][i]) * x1->elems[j][0]; 
+                accumul += (A->elems[i][j] / A->elems[i][i]) * x1->elems[j][0];
             }
             x2->elems[i][0] = (b->elems[i][0] / A->elems[i][i]) - accumul;
         }
@@ -321,7 +307,7 @@ void SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
         x2 = temp;
     } while (VectorNorm1(x3) > EPSILON);
 
-    printf("iter: %d\n", iter);    
+    printf("iter: %d\n", iter);
     CopyMatrix(x, x1);
     FreeMatrix(x3);
     FreeMatrix(x2);
@@ -347,16 +333,16 @@ int main(void) {
     printf("b:\n");
     PrintMatrix(b);
 
-    FillMatrix(x, 0.0f);    // x contains x0    
+    FillMatrix(x, 0.0f);    // x contains x0
     SolveJacobi(A, b, x);
     printf("x Jacobi:\n");
-    PrintMatrix(x);    
+    PrintMatrix(x);
 
-    FillMatrix(x, 0.0f);    // x contains x0    
+    FillMatrix(x, 0.0f);    // x contains x0
     SolveGaussSeidel(A, b, x);
     printf("x GaussSeidel:\n");
-    PrintMatrix(x);    
-    
+    PrintMatrix(x);
+
     FreeMatrix(b);
     FreeMatrix(x);
     FreeMatrix(C);

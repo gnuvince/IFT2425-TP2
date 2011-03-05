@@ -9,7 +9,7 @@
 
 #define N 5
 #define M 0.36
-#define EPSILON 2e-8
+#define EPSILON 2e-6
 
 /*
   Structure pour représenter une matrice:
@@ -243,76 +243,59 @@ int MatrixEq(matrix_t* A, matrix_t* B) {
 }
 
 
-
-/* x contains x0 for the iterative evaluation */
 void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
-    matrix_t* x1 = NewMatrix(N, 1);
-    matrix_t* x2 = NewMatrix(N, 1);
-    matrix_t* x3 = NewMatrix(N, 1);
-    matrix_t* temp;
-    int iter = 0;
+    matrix_t* x_prev = NewMatrix(x->rows, 1);
 
-    CopyMatrix(x1, x);
+    float norm_difference;
+    int iterations = 1;
+
+    FillMatrix(x_prev, 0);
     do {
-        FillMatrix(x2, 0.0f);
-        iter += 1;
-        for (int i = 0; i < x->rows; ++i) {
+        for (int i = 0; i < A->rows; ++i) {
+            float val = b->elems[i][0] / A->elems[i][i];
             for (int j = 0; j < A->cols; ++j) {
-                if (i != j)
-                    x2->elems[i][0] += (A->elems[i][j] / A->elems[i][i]) * x1->elems[j][0];
+                if (i != j) {
+                    val -= (A->elems[i][j] / A->elems[i][i]) * x_prev->elems[j][0];
+                }
             }
-            x2->elems[i][0] = (b->elems[i][0] / A->elems[i][i]) -  x2->elems[i][0];
+            x->elems[i][0] = val;
         }
-        MatrixSub(x2, x1, x3);
-        temp = x1;
-        x1 = x2;
-        x2 = temp;
-    } while (VectorNorm1(x3) > EPSILON);
+        norm_difference = fabsf(VectorNorm1(x) - VectorNorm1(x_prev));
+        CopyMatrix(x_prev, x);
+        iterations++;
+    } while (norm_difference > EPSILON);
 
-    printf("iter: %d\n", iter);
-    CopyMatrix(x, x1);
-    FreeMatrix(x3);
-    FreeMatrix(x2);
-    FreeMatrix(x1);
+    printf("%d iterations\n", iterations);
+    FreeMatrix(x_prev);
 }
 
 
-
-/* x contains x0 for the iterative evaluation */
 void SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
-    matrix_t* x1 = NewMatrix(N, 1);
-    matrix_t* x2 = NewMatrix(N, 1);
-    matrix_t* x3 = NewMatrix(N, 1);
-    matrix_t* temp;
-    float accumul = 0.0f;
-    int iter = 0;
+    float norm_difference;
+    float prev_norm;
+    int iterations = 1;
 
-    CopyMatrix(x1, x);
+    FillMatrix(x, 0);
+    prev_norm = VectorNorm1(x);
     do {
-        FillMatrix(x2, 0.0f);
-        iter += 1;
-        for (int i = 0; i < x->rows; ++i) {
-            accumul = 0.0f;
-            for (int j = 0; j < i; ++j) {
-                accumul += (A->elems[i][j] / A->elems[i][i]) * x2->elems[j][0];
+        for (int i = 0; i < A->rows; ++i) {
+            float val = b->elems[i][0] / A->elems[i][i];
+            for (int j = 0; j < A->cols; ++j) {
+                if (i != j) {
+                    val -= (A->elems[i][j] / A->elems[i][i]) * x->elems[j][0];
+                }
             }
-            for (int j = (i + 1); j < A->cols; ++j) {
-                accumul += (A->elems[i][j] / A->elems[i][i]) * x1->elems[j][0];
-            }
-            x2->elems[i][0] = (b->elems[i][0] / A->elems[i][i]) - accumul;
+            x->elems[i][0] = val;
         }
-        MatrixSub(x2, x1, x3);
-        temp = x1;
-        x1 = x2;
-        x2 = temp;
-    } while (VectorNorm1(x3) > EPSILON);
+        float norm = VectorNorm1(x);
+        norm_difference = fabsf(norm - prev_norm);
+        prev_norm = norm;
+        iterations++;
+    } while (norm_difference > EPSILON);
 
-    printf("iter: %d\n", iter);
-    CopyMatrix(x, x1);
-    FreeMatrix(x3);
-    FreeMatrix(x2);
-    FreeMatrix(x1);
+    printf("%d iterations\n", iterations);
 }
+
 
 int main(void) {
     matrix_t* A = NewMatrix(N, N);

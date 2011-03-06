@@ -7,9 +7,10 @@
 #include <stdio.h>
 #include <math.h>
 
+/* Paramètres donnés dans l'énoncé. */
 #define N 5
-#define M 0.36
-#define EPSILON 2e-6
+#define M 0.3
+#define EPSILON 10e-10
 
 /*
   Structure pour représenter une matrice:
@@ -243,7 +244,7 @@ int MatrixEq(matrix_t* A, matrix_t* B) {
 }
 
 
-void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
+int SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
     matrix_t* x_prev = NewMatrix(x->rows, 1);
 
     float norm_difference;
@@ -265,12 +266,12 @@ void SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
         iterations++;
     } while (norm_difference > EPSILON);
 
-    printf("%d iterations\n", iterations);
     FreeMatrix(x_prev);
+    return iterations;
 }
 
 
-void SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
+int SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
     float norm_difference;
     float prev_norm;
     int iterations = 1;
@@ -293,7 +294,7 @@ void SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
         iterations++;
     } while (norm_difference > EPSILON);
 
-    printf("%d iterations\n", iterations);
+    return iterations;
 }
 
 
@@ -304,26 +305,36 @@ int main(void) {
     matrix_t* x = NewMatrix(N, 1);
     matrix_t* b = NewMatrix(N, 1);
 
+    puts("QUESTION 1");
+    puts("==========");
     MakePentadiagonalMatrix(A, M);
     MakeBVector(A, b);
-
-    printf("A:\n");
+    puts("A:");
     PrintMatrix(A);
-    if (DiagonallyDominant(A))
-        printf("Matrice diagonalement dominante\n\n");
-    else
-        printf("Matrice non diagonalement dominante\n\n");
-    printf("b:\n");
+    puts("b:");
     PrintMatrix(b);
 
+
+    puts("QUESTION 2");
+    puts("==========");
+    puts("Les méthodes de Jacobi et Gauss-Seidel convergent si A est diagonalement dominante.");
+    if (DiagonallyDominant(A))
+        printf("La matrice A est diagonalement dominante\n\n");
+    else
+        printf("La matrice A n'est pas diagonalement dominante\n\n");
+
+    puts("QUESTION 3");
+    puts("==========");
     FillMatrix(x, 0.0f);    // x contains x0
-    SolveJacobi(A, b, x);
-    printf("x Jacobi:\n");
+    int iter_jacobi = SolveJacobi(A, b, x);
+    printf("Solution x par la méthode de Jacobi:\n");
+    printf("Nombre d'itérations: %d\n", iter_jacobi);
     PrintMatrix(x);
 
     FillMatrix(x, 0.0f);    // x contains x0
-    SolveGaussSeidel(A, b, x);
-    printf("x GaussSeidel:\n");
+    int iter_gauss_seidel = SolveGaussSeidel(A, b, x);
+    printf("Solution x par la méthode de Gauss-Seidel:\n");
+    printf("Nombre d'itérations: %d\n", iter_gauss_seidel);
     PrintMatrix(x);
 
     FreeMatrix(b);

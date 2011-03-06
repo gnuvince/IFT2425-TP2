@@ -1,0 +1,135 @@
+\documentclass[10pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{parskip}
+
+
+\begin{document}
+
+\title{IFT2425 - TP2 - Rapport}
+\date{Mars 2011}
+\author{Vincent Foley-Bourgon (FOLV08078309) \and
+  Eric Thivierge (THIE09016601)}
+
+\maketitle
+
+\section{Problème et solution}
+
+Nous faisons la résolution d'un système d'équations linéaires en
+utilisant deux méthodes itératives, Jacobi et Gauss-Seidel.  On
+s'intéresse à leur vitesse de convergence ainsi qu'à l'exactitude du
+résultat qu'elles offrent.
+
+\section{Réponses aux questions}
+
+\subsection{Question 1}
+
+Voici la matrice $A$ et le vecteur $\vec{b}$ étant donné les
+paramètres suivants:
+
+\begin{itemize}
+\item $N = 5$: dimensions de la matrice
+\item $M = 0.3$: valeur à mettre dans la matrice
+\end{itemize}
+
+\[
+A_{N \times N} = \begin{bmatrix}
+  1.00 & 0.30 & 0.09 & 0.00 & 0.00 \\
+  0.30 & 1.00 & 0.30 & 0.09 & 0.00 \\
+  0.09 & 0.30 & 1.00 & 0.30 & 0.09 \\
+  0.00 & 0.09 & 0.30 & 1.00 & 0.30 \\
+  0.00 & 0.00 & 0.09 & 0.30 & 1.00
+\end{bmatrix}
+\vec{b} = \begin{bmatrix}
+  1.39 \\
+  1.69 \\
+  1.78 \\
+  1.69 \\
+  1.39
+\end{bmatrix}
+\]
+
+\subsection{Question 2}
+
+La matrice $A$ est diagonalement dominante, car:
+
+\[
+|a_{ii}| > \left|\sum_{j=1, j \ne i}^5a_{ij}\right| \quad\quad i=1\ldots 5
+\]
+
+La fonction \emph{DiagonallyDominant} du programme C permet de
+vérifier qu'une matrice carrée est diagonalement dominante.
+
+\subsection{Question 3}
+
+Comme la matrice $A$ est diagonalement dominante, on peut résoudre ce
+système d'équations à l'aide des méthodes de Jacobi et de
+Gauss-Seidel.  Ces deux méthodes sont respectivement implantées dans
+les fonctions C $SolveJacobi$ et $SolveGaussSeidel$; elles prennent
+trois paramètres formels, la matrice $A$, le vecteur $\vec{b}$ et un
+vecteur $\vec{x}$ dans lequel sera écrite la solution.  Les deux
+fonctions retournent le nombre d'itérations requis pour résoudre le
+système.
+
+En effectuant la résolution avec un paramètre $\epsilon = 10^{-10}$,
+on trouve avec les deux méthodes la solution suivante:
+
+\[
+\vec{x} = \begin{bmatrix}
+  1 \\ 1 \\ 1 \\ 1 \\ 1
+\end{bmatrix}
+\]
+
+
+\subsection{Question 4}
+
+Le programme a résolu le système en 39 itérations avec la méthode de
+Jacobi et en 12 itérations avec la méthode de Gauss-Seidel.  Ceci
+s'explique par le fait que la méthode de Gauss-Seidel utilise toujours
+les approximations les plus exactes connu à un moment donné pour
+effectuer ses calculs, alors que la méthode de Jacobi ignore les
+valeurs plus exactes jusqu'à la prochaine itération. De ce fait, la
+méthode de Gauss-Seidel converge plus rapidement.
+
+Sur de grands systèmes parallèles, la méthode de Jacobi pourrait être
+avantageuse, car elle est plus facilement parallélisable (moins de
+conflits de course), mais pour une résolution sur de petits systèmes,
+comme par exemple des téléphones cellulaires, il est préférable de
+choisir la méthode de Gauss-Seidel.
+
+\subsection{Question 5}
+
+Dans le cas où on fixe le paramètre $M=0.5$, on obtient les résultats
+suivants:
+
+\[
+\vec{x}_{\text{Gauss-Seidel}} = \begin{bmatrix}
+  1 \\ 1 \\ 1 \\ 1 \\ 1
+\end{bmatrix} \tag{Itérations: 20}
+\]
+
+\[
+\vec{x}_{\text{Jacobi}} = \begin{bmatrix}
+  65874949127363408333634736203520540672 \\
+  97324716552520863844231982403670769664 \\
+  111950605506629327206985432673032339456 \\
+  97324716552520863844231982403670769664 \\
+  65874954197965809246552342190333362176
+\end{bmatrix} \tag{Itérations: 578}
+\]
+
+La méthode de Gauss-Seidel donne encore la bonne solution, mais on
+voit qu'il y a eu une explosion d'erreur numérique du côté de Jacobi;
+elle a donné une solution avec un facteur d'erreur astronomique et a
+pris près de 30 fois plus d'itérations que Gauss-Seidel pour arriver à
+ce mauvais résultat.
+
+Définitivement, pour résoudre ce système, on voudrait utiliser la
+méthode de Gauss-Seidel.
+
+\end{document}

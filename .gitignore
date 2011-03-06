@@ -1,3 +1,6 @@
 *~
 *dSYM
 tp2
+*.aux
+*.log
+*.pdf

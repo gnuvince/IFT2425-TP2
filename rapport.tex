@@ -85,6 +85,8 @@ on trouve avec les deux méthodes la solution suivante:
 \end{bmatrix}
 \]
 
+L'implantation des méthodes de résolution est discutée plus tard dans
+ce rapport.
 
 \subsection{Question 4}
 
@@ -127,9 +129,62 @@ La méthode de Gauss-Seidel donne encore la bonne solution, mais on
 voit qu'il y a eu une explosion d'erreur numérique du côté de Jacobi;
 elle a donné une solution avec un facteur d'erreur astronomique et a
 pris près de 30 fois plus d'itérations que Gauss-Seidel pour arriver à
-ce mauvais résultat.
+ce mauvais résultat.  On peut sans doute attribuer cet échec au fait
+qu'avec $M=0.5$, la matrice n'était pas diagonalement dominante.
 
 Définitivement, pour résoudre ce système, on voudrait utiliser la
 méthode de Gauss-Seidel.
+
+
+\section{Implantation des méthodes de résolution}
+
+\subsection{Jacobi}
+
+Pour la méthode de Jacobi, la valeur de $\vec{x}$ est calculée par la
+formule suivante:
+
+\[
+x_i^{[k+1]} = \frac{b_i - \sum_{j=1, j \ne i}^N
+  a_{ij}x_j^{[k]}}{a_{ii}} \tag{1}
+\]
+
+Dans l'implantation, nous faisons l'allocation d'un vecteur
+\emph{x\_prev} qui est initialisé à $\vec{0}$ et qui contient les
+valeurs de $x$ trouvées à l'itération précédente.
+
+La formule (1) est appliquée continuellement jusqu'à ce que la
+condition suivante soit respectée:
+
+\[
+\left\| \vec{x}^{[k]} - \vec{x}^{[k-1]} \right\|_1 < \epsilon
+\]
+
+Le calcul de la norme 1 se fait tout simplement en faisant la somme
+des éléments en valeur absolue du vecteur.
+
+Une fois la condition de terminaison remplie, on libère
+\emph{x\_prev} et on retourne le nombre d'itérations.
+
+\subsection{Gauss-Seidel}
+
+Pour la méthode de Gauss-Seidel, la valeur de $\vec{x}$ est calculée
+par la formule suivante:
+
+\[
+x_i^{[k+1]} = \frac{b_i - \sum_{j=1, j \ne i}^{i-1}
+  a_{ij}x_j^{[k+1]}{a_{ii}} - \sum_{j=i+1}^{N}
+  a_{ij}x_j^{[k]}}{a_{ii}}  \tag{2}
+\]
+
+Surprenament, bien que cette formule semble plus compliquée que celle
+de Gauss-Seidel, son implantation en C est en fait plus simple, car on
+a pas besoin de créer un vecteur \emph{x\_prev}, car à chaque
+point durant le calcul, \emph{x} contient les nouvelles valeurs avant
+l'indice courant et les anciennes valeurs après l'indice courant.
+
+Le code de cette méthode de résolution est pratiquement identique à
+celui de Jacobi autrement: la condition d'arrêt est la même et la
+fonction retourne également le nombre d'itérations.
+
 
 \end{document}

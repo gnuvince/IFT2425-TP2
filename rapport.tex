@@ -70,8 +70,8 @@ vérifier qu'une matrice carrée est diagonalement dominante.
 Comme la matrice $A$ est diagonalement dominante, on peut résoudre ce
 système d'équations à l'aide des méthodes de Jacobi et de
 Gauss-Seidel.  Ces deux méthodes sont respectivement implantées dans
-les fonctions C $SolveJacobi$ et $SolveGaussSeidel$; elles prennent
-trois paramètres formels, la matrice $A$, le vecteur $\vec{b}$ et un
+les fonctions C $SolveJacobi$ et $SolveGaussSeidel$.  Elles prennent
+trois paramètres formels: la matrice $A$, le vecteur $\vec{b}$ et un
 vecteur $\vec{x}$ dans lequel sera écrite la solution.  Les deux
 fonctions retournent le nombre d'itérations requis pour résoudre le
 système.
@@ -156,7 +156,7 @@ La formule (1) est appliquée continuellement jusqu'à ce que la
 condition suivante soit respectée:
 
 \[
-\left\| \vec{x}^{[k]} - \vec{x}^{[k-1]} \right\|_1 < \epsilon
+\left\| \vec{x}^{[k]} \right\|_1 - \left\| \vec{x}^{[k-1]} \right\|_1 < \epsilon
 \]
 
 Le calcul de la norme 1 se fait tout simplement en faisant la somme
@@ -171,16 +171,16 @@ Pour la méthode de Gauss-Seidel, la valeur de $\vec{x}$ est calculée
 par la formule suivante:
 
 \[
-x_i^{[k+1]} = \frac{b_i - \sum_{j=1, j \ne i}^{i-1}
+x_i^{[k+1]} = \frac{b_i - \sum_{j=1}^{i-1}
   a_{ij}x_j^{[k+1]}{a_{ii}} - \sum_{j=i+1}^{N}
   a_{ij}x_j^{[k]}}{a_{ii}}  \tag{2}
 \]
 
 Surprenament, bien que cette formule semble plus compliquée que celle
-de Gauss-Seidel, son implantation en C est en fait plus simple, car on
-a pas besoin de créer un vecteur \emph{x\_prev}, car à chaque
-point durant le calcul, \emph{x} contient les nouvelles valeurs avant
-l'indice courant et les anciennes valeurs après l'indice courant.
+de Jacobi, son implantation en C est en fait plus simple, car on a pas
+besoin de créer un vecteur \emph{x\_prev}; à chaque point durant le
+calcul, \emph{x} contient les nouvelles valeurs avant l'indice courant
+et les anciennes valeurs après l'indice courant.
 
 Le code de cette méthode de résolution est pratiquement identique à
 celui de Jacobi autrement: la condition d'arrêt est la même et la

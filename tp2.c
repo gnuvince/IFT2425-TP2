@@ -20,8 +20,8 @@
   - rows, cols: dimensions de la matrice.
  */
 typedef struct {
-    float** elems;
-    float*  start;
+    double** elems;
+    double*  start;
     int     rows, cols;
 } matrix_t;
 
@@ -35,13 +35,13 @@ matrix_t* NewMatrix(int rows, int cols) {
         abort();
     }
 
-    float** elems = malloc(sizeof(float*) * rows);
+    double** elems = malloc(sizeof(double*) * rows);
     if (elems == NULL) {
         fprintf(stderr, "memoire insuffisante\n");
         abort();
     }
 
-    float* data = calloc(rows*cols, sizeof(float));
+    double* data = calloc(rows*cols, sizeof(double));
     if (data == NULL) {
         fprintf(stderr, "memoire insuffisante\n");
         abort();
@@ -67,7 +67,7 @@ void FreeMatrix(matrix_t* mat) {
 }
 
 
-void FillMatrix(matrix_t* mat, float val) {
+void FillMatrix(matrix_t* mat, double val) {
   for (int i = 0; i < mat->rows; ++i)
     for (int j = 0; j < mat->cols; ++j)
         mat->elems[i][j] = val;
@@ -85,12 +85,12 @@ void FillMatrix(matrix_t* mat, float val) {
   0 ...                 0  m^2 m 1
  */
 
-void MakePentadiagonalMatrix(matrix_t* matrix, float m) {
+void MakePentadiagonalMatrix(matrix_t* matrix, double m) {
     // Do nothing if the matrix isn't square or if m not in [0..1].
     if ((matrix->rows != matrix->cols) || (m < 0.0) || (m > 1.0))
         return;
 
-    float m2 = m*m;
+    double m2 = m*m;
 
     for (int i = 0; i < matrix->rows; ++i) {
         for (int j = 0; j < matrix->cols; ++j) {
@@ -105,7 +105,7 @@ void MakePentadiagonalMatrix(matrix_t* matrix, float m) {
 
 /* Returns true if mat is diagonally dominant */
 int DiagonallyDominant(matrix_t* mat) {
-    float linetotal;
+    double linetotal;
 
     for (int i = 0; i < mat->rows; ++i) {
         linetotal = 0.0;
@@ -118,8 +118,8 @@ int DiagonallyDominant(matrix_t* mat) {
     return 1;
 }
 
-float VectorNorm1(matrix_t* vector) {
-    float norm = 0.0f;
+double VectorNorm1(matrix_t* vector) {
+    double norm = 0.0f;
 
     for (int i = 0; i < vector->rows; ++i)
         norm += fabs(vector->elems[i][0]);
@@ -127,9 +127,9 @@ float VectorNorm1(matrix_t* vector) {
     return norm;
 }
 
-float MatrixNorm1(matrix_t* mat) {
-    float norm = 0.0f;
-    float max = 0.0f;
+double MatrixNorm1(matrix_t* mat) {
+    double norm = 0.0f;
+    double max = 0.0f;
 
     for (int j = 0; j < mat->cols; ++j) {
         norm = 0.0;
@@ -167,7 +167,7 @@ void MatrixAdd(matrix_t* A, matrix_t* B, matrix_t* C) {
             C->elems[i][j] = A->elems[i][j] + B->elems[i][j];
 }
 
-void MatrixScalarMult(matrix_t* A, float scal, matrix_t* C) {
+void MatrixScalarMult(matrix_t* A, double scal, matrix_t* C) {
     for (int i = 0; i < C->rows; ++i)
         for (int j = 0; j < C->cols; ++j)
             C->elems[i][j] = A->elems[i][j] * scal;
@@ -179,7 +179,7 @@ void MatrixMult(matrix_t* A, matrix_t* B, matrix_t* C) {
 
     for (int i = 0; i < A->rows; i++)
         for (int j = 0; j < B->cols; j++) {
-            float temp = 0;
+            double temp = 0;
             for (int k = 0; k < B->rows; k++)
                 temp += A->elems[i][k] * B->elems[k][j];
             C->elems[i][j] = temp;
@@ -217,7 +217,7 @@ void CopyMatrix(matrix_t* dst, matrix_t* src) {
     if (src->rows != dst->rows || src->cols != dst->cols)
         return;
 
-    memcpy(dst->start, src->start, sizeof(float) * src->rows * src->cols);
+    memcpy(dst->start, src->start, sizeof(double) * src->rows * src->cols);
 }
 
 
@@ -246,14 +246,15 @@ int MatrixEq(matrix_t* A, matrix_t* B) {
 
 int SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
     matrix_t* x_prev = NewMatrix(x->rows, 1);
+    matrix_t* vect_difference = NewMatrix(x->rows, 1);
 
-    float norm_difference;
+    double norm_difference;
     int iterations = 1;
 
     FillMatrix(x_prev, 0);
     do {
         for (int i = 0; i < A->rows; ++i) {
-            float val = b->elems[i][0] / A->elems[i][i];
+            double val = b->elems[i][0] / A->elems[i][i];
             for (int j = 0; j < A->cols; ++j) {
                 if (i != j) {
                     val -= (A->elems[i][j] / A->elems[i][i]) * x_prev->elems[j][0];
@@ -261,26 +262,28 @@ int SolveJacobi(matrix_t* A, matrix_t* b, matrix_t* x) {
             }
             x->elems[i][0] = val;
         }
-        norm_difference = fabsf(VectorNorm1(x) - VectorNorm1(x_prev));
+        MatrixSub(x, x_prev, vect_difference);
+        norm_difference = fabsf(VectorNorm1(vect_difference));
         CopyMatrix(x_prev, x);
         iterations++;
     } while (norm_difference > EPSILON);
 
     FreeMatrix(x_prev);
+    FreeMatrix(vect_difference);
     return iterations;
 }
 
 
 int SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
-    float norm_difference;
-    float prev_norm;
+    double norm_difference;
+    double prev_norm;
     int iterations = 1;
 
     FillMatrix(x, 0);
     prev_norm = VectorNorm1(x);
     do {
         for (int i = 0; i < A->rows; ++i) {
-            float val = b->elems[i][0] / A->elems[i][i];
+            double val = b->elems[i][0] / A->elems[i][i];
             for (int j = 0; j < A->cols; ++j) {
                 if (i != j) {
                     val -= (A->elems[i][j] / A->elems[i][i]) * x->elems[j][0];
@@ -288,7 +291,7 @@ int SolveGaussSeidel(matrix_t* A, matrix_t* b, matrix_t* x) {
             }
             x->elems[i][0] = val;
         }
-        float norm = VectorNorm1(x);
+        double norm = VectorNorm1(x);
         norm_difference = fabsf(norm - prev_norm);
         prev_norm = norm;
         iterations++;

@@ -90,8 +90,8 @@ ce rapport.
 
 \subsection{Question 4}
 
-Le programme a résolu le système en 39 itérations avec la méthode de
-Jacobi et en 12 itérations avec la méthode de Gauss-Seidel.  Ceci
+Le programme a résolu le système en 51 itérations avec la méthode de
+Jacobi et en 14 itérations avec la méthode de Gauss-Seidel.  Ceci
 s'explique par le fait que la méthode de Gauss-Seidel utilise toujours
 les approximations les plus exactes connu à un moment donné pour
 effectuer ses calculs, alors que la méthode de Jacobi ignore les
@@ -112,25 +112,25 @@ suivants:
 \[
 \vec{x}_{\text{Gauss-Seidel}} = \begin{bmatrix}
   1 \\ 1 \\ 1 \\ 1 \\ 1
-\end{bmatrix} \tag{Itérations: 20}
+\end{bmatrix} \tag{Itérations: 27}
 \]
 
 \[
 \vec{x}_{\text{Jacobi}} = \begin{bmatrix}
-  65874949127363408333634736203520540672 \\
-  97324716552520863844231982403670769664 \\
-  111950605506629327206985432673032339456 \\
-  97324716552520863844231982403670769664 \\
-  65874954197965809246552342190333362176
-\end{bmatrix} \tag{Itérations: 578}
+  -\text{nan} \\
+  -\text{nan} \\
+  -\infty \\
+  -\text{nan} \\
+  -\text{nan}
+\end{bmatrix} \tag{Itérations: 4687}
 \]
 
 La méthode de Gauss-Seidel donne encore la bonne solution, mais on
 voit qu'il y a eu une explosion d'erreur numérique du côté de Jacobi;
-elle a donné une solution avec un facteur d'erreur astronomique et a
-pris près de 30 fois plus d'itérations que Gauss-Seidel pour arriver à
-ce mauvais résultat.  On peut sans doute attribuer cet échec au fait
-qu'avec $M=0.5$, la matrice n'était pas diagonalement dominante.
+elle a donné une solution inexacte et a pris plus de 150 fois plus
+d'itérations que Gauss-Seidel pour arriver à ce mauvais résultat.  On
+peut attribuer cet échec au fait qu'avec $M=0.5$, la matrice n'était
+pas diagonalement dominante.
 
 Définitivement, pour résoudre ce système, on voudrait utiliser la
 méthode de Gauss-Seidel.
@@ -156,7 +156,7 @@ La formule (1) est appliquée continuellement jusqu'à ce que la
 condition suivante soit respectée:
 
 \[
-\left\| \vec{x}^{[k]} \right\|_1 - \left\| \vec{x}^{[k-1]} \right\|_1 < \epsilon
+\left\| \vec{x}^{[k]} - \vec{x}^{[k-1]} \right\|_1 < \epsilon
 \]
 
 Le calcul de la norme 1 se fait tout simplement en faisant la somme
